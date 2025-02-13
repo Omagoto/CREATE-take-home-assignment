@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<!--Made by Bradley Ball-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Home Assignment</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Don't use this in production: -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            text-align: center;
+            margin: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+
+        /**
+         * First view, first name and last name. 
+         * checks if name is a valid name with regex.
+         * 
+         */
+         function AComponent({onData}) {
+            let [firstName, setFirstName] = React.useState("");
+            let [lastName, setLastName] = React.useState("");
+            let [error,setError] = React.useState("");
+
+            function eventHandler() {
+                if(firstName.length >= 1 && lastName.length >= 1) {
+                    let regex = /[^A-z0-9\-\s]/
+                    if(regex.test(firstName) || regex.test(lastName)){ //checks for special characters
+                        setError("Name shouldn't contain special characters.") 
+                    }
+                    else {
+                        regex = /[0-9]/ //checks for numbers
+                        if(regex.test(firstName) || regex.test(lastName)) {
+                            setError("Names should include no numbers.");
+                        }
+                        else {
+                            setError("Looking good, please continue.");
+                            let data = {first:firstName,last:lastName,mode:"b"};
+                            onData(data);
+                        }
+                    }
+                } 
+                else {
+                    setError("Please fill in all forms.");
+                }
+ 
+            }
+
+            return (
+                    <div>
+                        <label>First Name</label>
+                        <input type="text" value={firstName} onChange={(event) => setFirstName(event.target.value)}/><br/>
+                        <label>Last Name</label>
+                        <input type="text" value={lastName} onChange={(event) => setLastName(event.target.value)}/><br/>
+                        <button type="button" onClick={()=>eventHandler()}>Validate!</button>
+                        <p>{error}</p>
+                    </div>
+                );
+        }
+        /**
+         * Second view, gender and health card
+         * checks if card is a valid with regex and a mod ten algorithm.
+         * 
+         */
+        function BComponent({onData}) {
+            let [gender,setGender] = React.useState("Male");
+            let [card,setCard] = React.useState("");
+            let [error,setError] = React.useState("");
+
+            function eventHandler() {
+                let checkDigit = 1;
+                let regex = /[0-9]/;
+
+
+                if(card.length != 10){
+                    setError("Health card must be a ten digit number.");
+                }
+                else{
+                    if(card.length == 10 && regex.test(card)){
+                        let temp = 0;
+                        for (let i = card.length - 1; i >= 0;i--) {
+                            if(i % 2 == 1) 
+                                if((card[i]*2) > 9)
+                                    temp += Number((card[i]*2) - 9);
+                                else
+                                    temp += Number((card[i]*2));
+
+                            else
+                                temp += Number(card[i]);
+                        }
+                        checkDigit = (10 - (temp % 10)) % 10
+                        if(checkDigit == 0) { //In this instance lets assume our check digit must be 0
+                            setError("Looking good, please continue.");
+                            let data = {gender:gender,card:card,mode:"c"};
+                            onData(data);
+                        }
+                        else {
+                            setError("Not a valid health card.");
+                        }
+                    }
+                    else {
+                        setError("Health card must be a number.");
+                    }
+                }
+
+
+            }
+
+            return (
+                <div>
+                    <label>Gender</label>
+                    <select onChange={(event) => setGender(event.target.value)}>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select><br/>
+                    <label>Health Card</label>
+                    <input type="text" value={card} onChange={(event) => setCard(event.target.value)}/><br/>
+                    <button type="button" onClick={()=>eventHandler()}>Validate!</button><br/>
+                    {error}
+
+                </div>
+            );
+        }
+        /**
+         * Third view, summary. 
+         * displays user info from previous views.
+         * 
+         */
+        function CComponent(props) {
+            let user = props.sendData
+            return (
+                <div>
+                    <p>First name: {user.first}</p>
+                    <p>Last name: {user.last}</p>
+                    <p>Gender: {user.gender}</p>
+                    <p>Health Card: {user.card}</p>
+                </div>
+            );
+        }
+        /**
+         * Controller. 
+         * Selects which view to display.
+         * 
+         */
+        function SwitchComponent(props) {
+            // could of made an object but had bugs and ran out of time.
+            let [mode, setMode] = React.useState("a");
+            let [checkValid, setCheckValid] = React.useState("");
+
+            let [firstName, setFirstName] = React.useState("");
+            let [lastName, setLastName] = React.useState("");
+            let [gender, setGender] = React.useState("");
+            let [card, setCard] = React.useState("");
+
+            let user = {first:firstName,last:lastName,gender:gender,card:card};
+
+            // function to get data from view A
+            function getDataFromA(data) {
+                setFirstName(data.first);
+                setLastName(data.last);
+                setCheckValid(data.mode);
+            }
+            // function to get data from view B
+            function getDataFromB(data) {
+                setGender(data.gender);
+                setCard(data.card);
+                setCheckValid(data.mode);
+            }
+
+            //Selects which view to display
+            let toRender;
+            if (mode == "a") toRender = <AComponent onData={getDataFromA}/>;
+            if (mode == "b") toRender = <BComponent onData={getDataFromB}/>;
+            if (mode == "c") toRender = <CComponent sendData = {user}/>;
+            function switchMode() {
+                if (mode == "b" && checkValid == "c") setMode("c");
+                if (mode == "a" && checkValid == "b") setMode("b");
+            }
+
+            return (
+                <div>
+                    {toRender} <br/> {mode != "c" && //removes continue button if on final page
+                    <button onClick={switchMode}>Continue</button>}
+                </div>
+            )
+        }
+
+        function App() {
+            return <SwitchComponent />;
+        }
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
